@@ -95,7 +95,7 @@ if __name__ == '__main__':
 					text_handler('No Date', EXCEPTION_CHAT_ID)
 				if info['smtp']['email_qty_left']:
 					text = ''
-					print(str(info['smtp']['email_qty_left']))
+					log.info(str(info['smtp']['email_qty_left']))
 					if info['smtp']['email_qty_left'] < 100:
 						text = 'Осталось менее 100 заявок'.format(info['smtp']['email_qty_left'])
 					elif info['smtp']['email_qty_left'] < 300:
