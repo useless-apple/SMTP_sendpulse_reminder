@@ -1,5 +1,8 @@
+# -*- coding: utf-8 -*-
+
 import json
 from datetime import datetime, timedelta
+import re
 
 from pytz import timezone
 
@@ -71,8 +74,13 @@ if __name__ == '__main__':
 
 		@bot.message_handler(content_types=['text'])
 		def text_handler(text, chat_id):
-			if text is not None:
-				bot.send_message(chat_id, text)
+			if text is not None and text != '':
+				try:
+					bot.send_message(chat_id, text)
+				except Exception as e:
+					log.error(str(text))
+					log.exception(str(e))
+				
 
 		info = get_info_global()
 		if info is not None:
@@ -81,11 +89,11 @@ if __name__ == '__main__':
 					text = ''
 					time_end_date = datetime.strptime(info['smtp']['end_date'], "%Y-%m-%d  %H:%M:%S").date()
 					if timenow + timedelta(days=1) == time_end_date:
-						text = 'Один день до конца тарифа, дата окончания'.format(time_end_date)
+						text = '1 day ({})'.format(time_end_date)
 					elif timenow + timedelta(days=2) == time_end_date:
-						text = 'Два дня до конца тарифа, дата окончания'.format(time_end_date)
+						text = '2 day ({})'.format(time_end_date)
 					elif timenow + timedelta(days=3) == time_end_date:
-						text = 'Три дня до конца тарифа, дата окончания'.format(time_end_date)
+						text = '3 day ({})'.format(time_end_date)
 					if check_and_update_sql('last_info_day', text):
 						text_handler(text, CHAT_ID)
 						log.info(text)
@@ -95,21 +103,48 @@ if __name__ == '__main__':
 					text_handler('No Date', EXCEPTION_CHAT_ID)
 				if info['smtp']['email_qty_left']:
 					text = ''
-					if info['smtp']['email_qty_left'] < 100:
-						text = 'Осталось менее 100 заявок'.format(info['smtp']['email_qty_left'])
+					if info['smtp']['email_qty_left'] < 200:
+						text = 'Осталось менее 200 заявок (сейчас: {} заявок)'.format(info['smtp']['email_qty_left'])
 					elif info['smtp']['email_qty_left'] < 300:
-						text = 'Осталось менее 300 заявок'.format(info['smtp']['email_qty_left'])
+						text = 'Осталось менее 300 заявок'
 					elif info['smtp']['email_qty_left'] < 500:
-						text = 'Осталось менее 500 заявок'.format(info['smtp']['email_qty_left'])
+						text = 'Осталось менее 500 заявок'
 					elif info['smtp']['email_qty_left'] < 1000:
-						text = 'Осталось менее 1000 заявок'.format(info['smtp']['email_qty_left'])
+						text = 'Осталось менее 1000 заявок'
+					elif info['smtp']['email_qty_left'] < 2000:
+						text = 'Осталось менее 2000 заявок'
+					elif info['smtp']['email_qty_left'] < 3000:
+						text = 'Осталось менее 3000 заявок'
 					if check_and_update_sql('last_info_count', text):
 						text_handler(text, CHAT_ID)
-					log.info('Заявок насчитано: ' + str(info['smtp']['email_qty_left']))
+					log.info('Tickets: {}'.format(str(info['smtp']['email_qty_left'])))
 					check_and_update_sql('count_tickets', str(info['smtp']['email_qty_left']))
 				else:
 					log.warning('No limit')
 					text_handler('No limit', EXCEPTION_CHAT_ID)
+				if info['smtp']['traffic_limit_left']:
+					reg_int = re.findall("\d+\.\d+", info['smtp']['traffic_limit_left'])
+					int_traffic_limit_left = int(float(reg_int[0]))
+					text = ''
+					if int_traffic_limit_left < 50:
+						text = 'Осталось менее 50 МБ траффика (сейчас: {} мб)'.format(int_traffic_limit_left)
+					elif int_traffic_limit_left < 100:
+						text = 'Осталось менее 100 МБ траффика'
+					elif int_traffic_limit_left < 200:
+						text = 'Осталось менее 200 МБ траффика'
+					elif int_traffic_limit_left < 300:
+						text = 'Осталось менее 300 МБ траффика'
+					elif int_traffic_limit_left < 400:
+						text = 'Осталось менее 400 МБ траффика'
+					elif int_traffic_limit_left < 500:
+						text = 'Осталось менее 500 МБ траффика'
+					if check_and_update_sql('last_traffic_limit_left', text):
+						text_handler(text, CHAT_ID)
+					log.info('Traffic: {}'.format(str(int_traffic_limit_left)))
+					check_and_update_sql('traffic_limit_left', str(int_traffic_limit_left))
+				else:
+					log.warning('No traffic limit')
+					text_handler('No traffic limit', EXCEPTION_CHAT_ID)
 			else:
 				log.warning('No smtp')
 				text_handler('No smtp', EXCEPTION_CHAT_ID)
